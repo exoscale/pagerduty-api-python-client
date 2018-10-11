@@ -193,3 +193,34 @@ class Incident(Entity):
             endpoint=endpoint,
             api_key=self.api_key,
         )
+
+    @classmethod
+    def status_batch(cls, status, from_email, incidents, api_key=None):
+        """Change the status of an incident and those in the incidents list"""
+        if from_email is None or not isinstance(from_email, six.string_types):
+            raise MissingFromEmail(from_email)
+
+        inst = cls(api_key=api_key)
+        endpoint = '/incidents'
+        add_headers = {'from': from_email, }
+        incidents_data = []
+        for incident in incidents:
+            incidents_data.append({"id": incident.id,
+                                   "type": "incident_reference",
+                                   "status": status})
+        data = {"incidents": incidents_data}
+        result = inst.request('PUT',
+                              endpoint=endpoint,
+                              add_headers=add_headers,
+                              data=data,)
+        return result
+
+    @classmethod
+    def acknowledge_batch(cls, from_email, incidents, api_key=None):
+        """Ack a batch of incidents"""
+        return cls.status_batch("acknowledged", from_email, incidents, api_key=api_key)
+
+    @classmethod
+    def resolve_batch(cls, from_email, incidents, api_key=None):
+        """Resolve a batch of incidents"""
+        return cls.status_batch("resolved", from_email, incidents, api_key=api_key)
